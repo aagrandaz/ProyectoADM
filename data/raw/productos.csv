@@ -1,0 +1,17 @@
+id_producto,campo_original,nombre_producto,categoria_producto
+1,ind_ahor_fin_ult1,Cuenta de ahorro,Ahorro
+2,ind_aval_fin_ult1,Aval,Garantía
+3,ind_cco_fin_ult1,Cuenta corriente,Cuenta
+4,ind_cder_fin_ult1,Depósito a plazo,Ahorro
+5,ind_cno_fin_ult1,Cuenta nómina,Cuenta
+6,ind_ctju_fin_ult1,Cuenta joven,Cuenta
+7,ind_ctma_fin_ult1,Cuenta nómina ahorro,Cuenta
+8,ind_ctop_fin_ult1,Cuenta otra,Cuenta
+9,ind_ctpp_fin_ult1,Cuenta pago nómina,Cuenta
+10,ind_deco_fin_ult1,Depósito en comercio,Depósito
+11,ind_deme_fin_ult1,Depósito de mercado,Depósito
+12,ind_dela_fin_ult1,Depósito a plazo fijo,Depósito
+13,ind_ecue_fin_ult1,Cuenta electrónica,Cuenta
+14,ind_fond_fin_ult1,Fondo de inversión,Inversión
+15,ind_hip_fin_ult1,Hipoteca,Crédito
+16,ind_plan_fin_ult1,Plan de pensiones,Inversión
