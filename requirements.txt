@@ -1,0 +1,11 @@
+pandas
+duckdb
+pyarrow
+scikit-learn
+xgboost
+numpy
+matplotlib
+seaborn
+jupyter
+ipykernel
+mcp
