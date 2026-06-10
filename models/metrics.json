@@ -1,7 +1,7 @@
 {
-    "roc_auc": 0.7939835235975966,
-    "accuracy_at_1": 0.215,
-    "accuracy_at_3": 0.275,
+    "roc_auc": 0.7992124990673319,
+    "accuracy_at_1": 0.225,
+    "accuracy_at_3": 0.27,
     "best_params": {
         "classifier__n_estimators": 100,
         "classifier__min_samples_leaf": 2,
