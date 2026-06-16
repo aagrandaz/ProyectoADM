@@ -97,8 +97,9 @@ def start_prometheus_server(port=8000):
     try:
         start_http_server(port)
         logger.info(f"Servidor de métricas Prometheus levantado exitosamente en el puerto {port}")
-        # Cargar métricas iniciales
-        update_metrics_from_files()
+        while True:
+            update_metrics_from_files()
+            time.sleep(10)
     except Exception as e:
         logger.error(f"No se pudo iniciar el servidor Prometheus en puerto {port}: {str(e)}")
 
