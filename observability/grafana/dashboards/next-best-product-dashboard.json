@@ -6,8 +6,8 @@
   "tags": ["ml", "nbp", "observability", "mcp"],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 1,
-  "refresh": "10s",
+  "version": 2,
+  "refresh": "5s",
   "time": { "from": "now-1h", "to": "now" },
   "templating": {
     "list": [
@@ -24,10 +24,28 @@
   },
   "panels": [
     {
+      "id": 0,
+      "title": "",
+      "type": "text",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "html",
+        "content": "<div style=\"background: linear-gradient(135deg, #090d16 0%, #111827 50%, #1f2937 100%); border: 1px solid #3b82f6; border-radius: 8px; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 20px rgba(0,0,0,0.5);\">\n  <div>\n    <h1 style=\"margin: 0; color: #f8fafc; font-size: 24px; font-weight: 700; letter-spacing: -0.025em; text-shadow: 0 0 10px rgba(59,130,246,0.5);\">🚀 Next Best Product (NBP)</h1>\n    <p style=\"margin: 5px 0 0 0; color: #94a3b8; font-size: 14px;\">Plataforma de Monitoreo de Observabilidad Unificada para el Pipeline de Datos Medallón, Rendimiento de Modelos de ML y Herramientas del Servidor MCP.</p>\n  </div>\n  <div style=\"text-align: right;\">\n    <span style=\"background: rgba(59,130,246,0.1); border: 1px solid #3b82f6; color: #60a5fa; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600;\">V2.0 - Premium</span>\n  </div>\n</div>"
+      }
+    },
+    {
+      "id": 10,
+      "title": "🧠 Inteligencia Artificial: Métricas del Modelo & Explicabilidad",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 3 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
       "id": 1,
       "title": "🧠 Modelo ROC-AUC (Validación)",
       "type": "gauge",
-      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 0 },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
@@ -57,7 +75,7 @@
       "id": 2,
       "title": "🎯 Modelo Accuracy@1",
       "type": "gauge",
-      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 0 },
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
@@ -76,8 +94,8 @@
             "mode": "absolute",
             "steps": [
               { "color": "red", "value": null },
-              { "color": "yellow", "value": 10 },
-              { "color": "green", "value": 15 }
+              { "color": "yellow", "value": 15 },
+              { "color": "green", "value": 25 }
             ]
           }
         }
@@ -87,7 +105,7 @@
       "id": 3,
       "title": "🏆 Modelo Accuracy@3",
       "type": "gauge",
-      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 0 },
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
@@ -106,18 +124,52 @@
             "mode": "absolute",
             "steps": [
               { "color": "red", "value": null },
-              { "color": "yellow", "value": 15 },
-              { "color": "green", "value": 22 }
+              { "color": "yellow", "value": 20 },
+              { "color": "green", "value": 30 }
             ]
           }
         }
       }
     },
     {
+      "id": 9,
+      "title": "🔍 Explicabilidad del Modelo (Importancia de Variables)",
+      "type": "barchart",
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "nbp_model_feature_importance",
+          "legendFormat": "{{feature}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "orientation": "horizontal",
+            "showValue": "always"
+          }
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "📊 Tubería de Datos: Pipeline de Ingesta Medallón",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
       "id": 4,
       "title": "📊 Registros Procesados por Capa (Pipeline Medallón)",
       "type": "barchart",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
@@ -129,15 +181,49 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "mode": "palette-classic" }
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "showValue": "always"
+          }
         }
       }
+    },
+    {
+      "id": 8,
+      "title": "⏱️ Tiempos de Ejecución del Pipeline (segundos)",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "nbp_pipeline_latency_seconds",
+          "legendFormat": "Etapa: {{stage}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "showValue": "always"
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "📞 Integración con IA: Monitoreo de Herramientas MCP Server",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "collapsed": false,
+      "panels": []
     },
     {
       "id": 5,
       "title": "📞 Llamadas a Herramientas MCP Server",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
@@ -152,7 +238,10 @@
           "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
-            "lineInterpolation": "smooth"
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "fillOpacity": 15,
+            "gradientMode": "opacity"
           }
         }
       }
@@ -161,7 +250,7 @@
       "id": 6,
       "title": "⏱️ Latencia Promedio Herramientas MCP (segundos)",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 21 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
@@ -173,15 +262,30 @@
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "color": { "mode": "palette-classic" }
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "fillOpacity": 15,
+            "gradientMode": "opacity"
+          }
         }
       }
+    },
+    {
+      "id": 13,
+      "title": "📄 Diagnósticos del Sistema: Logs en Tiempo Real (Loki)",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 29 },
+      "collapsed": false,
+      "panels": []
     },
     {
       "id": 7,
       "title": "📄 Visor de Logs del Proyecto (Loki)",
       "type": "logs",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 23 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 30 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {

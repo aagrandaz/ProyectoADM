@@ -53,12 +53,22 @@ MCP_TOOL_LATENCY = Summary(
 MODEL_AUC = Gauge('nbp_model_auc_percent', 'ROC-AUC de validación del modelo entrenado (%)')
 MODEL_ACC1 = Gauge('nbp_model_accuracy_top1_percent', 'Accuracy@1 de validación del modelo (%)')
 MODEL_ACC3 = Gauge('nbp_model_accuracy_top3_percent', 'Accuracy@3 de validación del modelo (%)')
+MODEL_IMPORTANCE = Gauge(
+    'nbp_model_feature_importance', 
+    'Importancia analítica de las variables del modelo (%)', 
+    ['feature']
+)
 
 # Métricas del Pipeline de Ingesta
 PIPELINE_ROWS = Gauge(
     'nbp_pipeline_rows_processed_total', 
     'Cantidad de registros procesados por el pipeline Medallón', 
     ['layer']
+)
+PIPELINE_LATENCY = Gauge(
+    'nbp_pipeline_latency_seconds', 
+    'Tiempos de ejecución por etapa del pipeline (segundos)', 
+    ['stage']
 )
 
 # Inicializar métricas de herramientas con labels para evitar "No Data" en Grafana
@@ -79,7 +89,13 @@ def update_metrics_from_files():
             MODEL_AUC.set(data.get("roc_auc", 0.0) * 100)
             MODEL_ACC1.set(data.get("accuracy_at_1", 0.0) * 100)
             MODEL_ACC3.set(data.get("accuracy_at_3", 0.0) * 100)
-            logger.info("Gauges de modelo actualizados con éxito.")
+            
+            # Actualizar importancia de variables para explicabilidad
+            importances = data.get("feature_importances", {})
+            for feature, value in importances.items():
+                MODEL_IMPORTANCE.labels(feature=feature).set(value * 100)
+                
+            logger.info("Gauges de modelo e importancia de variables actualizados con éxito.")
         except Exception as e:
             logger.error(f"Error al leer metrics.json: {str(e)}")
             
@@ -93,6 +109,12 @@ def update_metrics_from_files():
             PIPELINE_ROWS.labels(layer="silver").set(pipe_data.get("silver_rows_processed", 0))
             PIPELINE_ROWS.labels(layer="gold_train").set(pipe_data.get("gold_train_rows_processed", 0))
             PIPELINE_ROWS.labels(layer="gold_test").set(pipe_data.get("gold_test_rows_processed", 0))
+            
+            PIPELINE_LATENCY.labels(stage="bronze").set(pipe_data.get("bronze_execution_time_seconds", 0.0))
+            PIPELINE_LATENCY.labels(stage="silver").set(pipe_data.get("silver_execution_time_seconds", 0.0))
+            PIPELINE_LATENCY.labels(stage="gold").set(pipe_data.get("gold_execution_time_seconds", 0.0))
+            PIPELINE_LATENCY.labels(stage="ml").set(pipe_data.get("ml_execution_time_seconds", 0.0))
+            PIPELINE_LATENCY.labels(stage="inference").set(pipe_data.get("inference_execution_time_seconds", 0.0))
             logger.info("Gauges de procesamiento de datos actualizados con éxito.")
         except Exception as e:
             logger.error(f"Error al leer pipeline_metrics.json: {str(e)}")

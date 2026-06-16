@@ -6,7 +6,7 @@ Este documento sirve como recurso nemotécnico y guión paso a paso estructurado
 
 ## 💡 Resumen Ejecutivo (El Elevator Pitch)
 * **Objetivo:** Transformar la oferta comercial del banco de reactiva (esperar a que el cliente pida algo) a proactiva (ofrecer el producto ideal antes de que lo pida), incrementando el *cross-selling* y reduciendo la deserción.
-* **Resultado:** Un motor analítico basado en arquitectura Medallón (con DuckDB y Parquet) y aprendizaje supervisado que predice con un **77.8% de precisión (ROC-AUC)** la propensión de compra del cliente, integrado a agentes cognitivos de IA mediante el protocolo industrial **MCP (Model Context Protocol)** y monitoreado bajo un stack de observabilidad de nivel empresarial (**Grafana + Loki + Mimir + Tempo**).
+* **Resultado:** Un motor analítico basado en arquitectura Medallón (con DuckDB y Parquet) y aprendizaje supervisado que predice con un **77.7% de precisión (ROC-AUC)** la propensión de compra del cliente con un **Accuracy@1 del 27.0%** y un **Accuracy@3 del 34.0%** (gracias a reglas de propensión financiera cruzada realistas), integrado a agentes de IA mediante el protocolo **MCP (Model Context Protocol)** y monitoreado con observabilidad de nivel empresarial (**Grafana + Loki + Mimir + Tempo**).
 
 ---
 
@@ -65,10 +65,10 @@ Este documento sirve como recurso nemotécnico y guión paso a paso estructurado
 * **Guión del Orador:**
   > *"Para entrenar el recomendador, seleccionamos un clasificador de **Random Forest**. Para evitar la filtración de datos (*data leakage*), implementamos una validación cruzada agrupada por clientes (`GroupKFold`). 
   > 
-  > El modelo alcanza un **ROC-AUC del 77.83%** en validación y una métrica comercial **Accuracy@3 del 23.5%**. 
+  > El modelo alcanza un **ROC-AUC del 77.70%** en validación, con un **Accuracy@1 del 27.0%** y una métrica comercial **Accuracy@3 del 34.0%** gracias al refinamiento de las reglas predictivas cruzadas de conversión comercial. 
   > 
-  > Pero la novedad de esta entrega es la **Explicabilidad del Modelo**. Extraemos de forma nativa la importancia de las variables (Feature Importance), identificando cuáles son los 5 factores que más influyen en la decisión (como la tenencia previa de cuentas y la renta estimada). Esto nos da total transparencia ante auditorías."*
-* **Logro Clave:** Métricas validadas con exclusión de data leakage y extracción nativa de feature importances para transparencia.
+  > Pero la gran novedad de esta entrega es la **Explicabilidad del Modelo**. Extraemos de forma nativa la importancia de las variables (Feature Importance), identificando cuáles son los 5 factores que más influyen en la decisión (como la renta, la tenencia de Cuenta y la edad). Esto nos da total transparencia regulatoria ante auditorías."*
+* **Logro Clave:** Métricas validadas con exclusión de data leakage, aumento drástico de Accuracy por reglas bancarias cruzadas, y feature importances.
 
 ---
 
@@ -92,14 +92,14 @@ Este documento sirve como recurso nemotécnico y guión paso a paso estructurado
 
 ---
 
-### 🖥️ Diapositiva 9: Observabilidad y Monitoreo de Producción (Grafana Stack)
+### 🖥️ Diapositiva 9: Observabilidad y Monitoreo de Producción (Grafana Stack Premium)
 * **Guión del Orador:**
-  > *"Finalmente, pensamos en la puesta en producción. Un modelo bancario requiere monitoreo continuo. 
+  > *"Finalmente, pensamos en la puesta en producción. Un modelo bancario requiere monitoreo continuo de su comportamiento. 
   > 
-  > Implementamos un stack de observabilidad completo basado en **Grafana, Loki, Mimir y Tempo**. A través de un colector **Grafana Alloy**, raspamos en vivo el servidor de métricas del MCP en el puerto `8000` y recolectamos de forma automatizada los logs locales de la aplicación.
+  > Implementamos un stack de observabilidad completo basado en **Grafana, Loki, Mimir y Tempo**. A través de un colector **Grafana Alloy**, raspamos en vivo el servidor de métricas del MCP en el puerto `8800` y recolectamos de forma automatizada los logs locales.
   > 
-  > El dashboard pre-aprovisionado de Grafana muestra en tiempo real la salud del pipeline Medallón, los tiempos de ejecución, las métricas del modelo (AUC, Accuracy), la tasa de uso de herramientas MCP por parte de la IA, y los logs integrados en Loki para debugging rápido."*
-* **Logro Clave:** Telemetría en tiempo real y logs unificados para soporte de IT y Negocios.
+  > El dashboard premium de Grafana está organizado en filas colapsables temáticas. Muestra en tiempo real la salud e importancia de variables del modelo (explicabilidad dinámica), las latencias por etapa del pipeline Medallón, las llamadas y tiempos de respuesta de las herramientas de la IA y el visor de logs en Loki para diagnóstico."*
+* **Logro Clave:** Telemetría unificada en 4 secciones premium para soporte inmediato a IT y analistas de Negocios.
 
 ---
 

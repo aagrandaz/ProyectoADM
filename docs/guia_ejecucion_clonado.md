@@ -130,9 +130,15 @@ Si prefieres ejecutar los notebooks de forma agnóstica en la nube de Google Col
 
 ---
 
-## 6. Paso 5: Levantamiento y Uso de la Observabilidad (Grafana + Loki + Mimir + Tempo)
+## 6. Paso 5: Levantamiento y Uso de la Observabilidad (Grafana Stack Premium)
 
-El proyecto incluye un entorno de observabilidad pre-configurado para monitorear el pipeline y el servidor MCP.
+El proyecto incluye un entorno de observabilidad pre-configurado para monitorear el pipeline, las métricas del recomendador y el servidor MCP.
+
+### Iniciar el Servidor MCP (Métricas Prometheus):
+El servidor MCP publica sus métricas en el puerto `8800`. Levántalo primero en segundo plano desde la carpeta raíz:
+```bash
+python src/mcp_server.py
+```
 
 ### Iniciar el Stack de Observabilidad (Docker):
 Asegúrate de tener Docker instalado y ejecutándose, luego corre desde la raíz del proyecto:
@@ -140,14 +146,19 @@ Asegúrate de tener Docker instalado y ejecutándose, luego corre desde la raíz
 cd observability
 docker compose up -d
 ```
-Esto levantará:
+Esto levantará de forma aislada:
 * **Grafana (Puerto 3000):** Consola de visualización (iniciar sesión con usuario `admin` y contraseña `admin123`).
-* **Loki (Puerto 3100):** Servidor de Logs (configurado para leer automáticamente los archivos en `logs/`).
-* **Mimir (Puerto 9009):** Servidor de Métricas Prometheus.
-* **Alloy (Puerto 12345):** Colector central que raspa logs y métricas locales.
+* **Loki (Puerto 3100):** Servidor de Logs (configurado para leer automáticamente los archivos en `logs/` mediante Alloy).
+* **Mimir (Puerto 9009):** Servidor de Métricas Prometheus (recibe las métricas enviadas por Alloy).
+* **Alloy (Puerto 12345):** Colector central que raspa los logs locales y el endpoint de métricas del MCP en `localhost:8800`.
 
-### Visualizar el Dashboard de Grafana:
+### Visualizar el Dashboard Premium de Grafana:
 1. Abre tu navegador e ingresa a `http://localhost:3000`.
 2. Ve al menú de **Dashboards** y selecciona **"Next Best Product - ML & Ingestion Observability"**.
-3. Verás en tiempo real las métricas de precisión de tu modelo (ROC-AUC, Accuracy), el volumen de filas procesadas por capa, la tasa de uso de herramientas MCP y el visor de logs integrado para `pipeline.log` y `mcp.log`.
+3. Verás la consola organizada en secciones colapsables premium:
+   * **🧠 Inteligencia Artificial: Métricas del Modelo & Explicabilidad**: Visualiza los indicadores clave del modelo de Machine Learning (AUC, Accuracy@1 y Accuracy@3) y la importancia analítica de las variables del modelo en tiempo real (explicabilidad del Random Forest).
+   * **📊 Tubería de Datos: Pipeline de Ingesta Medallón**: Cantidad de registros cargados y tiempos detallados de ejecución en segundos por cada etapa del pipeline (Bronze, Silver, Gold, ML, Inferencia) para diagnóstico de rendimiento.
+   * **📞 Integración con IA: Monitoreo de Herramientas MCP Server**: Tráfico de llamadas a las herramientas del Servidor MCP y latencias de respuesta suavizadas con gradiente de opacidad.
+   * **📄 Diagnósticos del Sistema: Logs en Tiempo Real (Loki)**: Visor directo de logs sincronizado en orden descendente para depurar fallos en caliente.
+
 

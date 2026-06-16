@@ -150,7 +150,7 @@ python src/predict.py
 
 El servidor MCP conecta de forma segura tu modelo analítico y datos con asistentes de Inteligencia Artificial (ej. Gemini o Claude):
 
-* **Puerto de Métricas Prometheus:** `http://localhost:8000/metrics` (expone automáticamente los resultados del último entrenamiento, volumen del pipeline y llamadas del MCP).
+* **Puerto de Métricas Prometheus:** `http://localhost:8800/metrics` (expone automáticamente los resultados del último entrenamiento con propensiones realistas, volumen del pipeline, tiempos por etapa e importancia analítica de variables).
 * **Herramientas Expuestas:**
   * `get_client_profile(client_id)`: Retorna datos demográficos e historial de tenencias del cliente.
   * `get_client_recommendation(client_id)`: Retorna la sugerencia del Random Forest y su probabilidad.
@@ -167,9 +167,9 @@ python src/mcp_server.py
 
 ---
 
-## 5. Monitoreo y Observabilidad (Grafana Stack)
+## 5. Monitoreo y Observabilidad (Grafana Stack Premium)
 
-Para levantar el entorno completo de monitoreo (Docker Requerido):
+Para levantar el entorno completo de monitoreo (requiere Docker instalado):
 
 ```bash
 cd observability
@@ -177,7 +177,17 @@ docker compose up -d
 ```
 
 Abre tu navegador e ingresa a **Grafana**: `http://localhost:3000` (Usuario: `admin` | Clave: `admin123`).
-Ingresa a **Dashboards** -> **Next Best Product - ML & Ingestion Observability** para ver:
-* Indicadores visuales de precisión y latencia del recomendador.
-* Visor de logs dinámico (Loki) sincronizado para los archivos de logs de `logs/`.
-* Métricas de uso de la IA interactuando con tu servidor MCP en tiempo real.
+El dashboard **Next Best Product - ML & Ingestion Observability** se aprovisiona automáticamente y cuenta con una interfaz premium organizada en las siguientes secciones colapsables:
+
+1. **🧠 Inteligencia Artificial: Métricas del Modelo & Explicabilidad**:
+   * Gauges interactivos para ROC-AUC, Accuracy@1 y Accuracy@3.
+   * Panel de **Explicabilidad (Importancia de Variables)** dinámico en formato de barras horizontales, que lee directamente del servidor MCP la métrica `nbp_model_feature_importance`.
+2. **📊 Tubería de Datos: Pipeline de Ingesta Medallón**:
+   * Volumen de registros procesados por cada una de las capas (Bronze, Silver, Gold).
+   * Panel de tiempos de ejecución (latencias en segundos) para cada etapa del pipeline, permitiendo identificar cuellos de botella de manera visual.
+3. **📞 Integración con IA: Monitoreo de Herramientas MCP Server**:
+   * Cantidad total de invocaciones al servidor MCP por cada herramienta (con suavizado de líneas y gradientes de opacidad premium).
+   * Tiempos promedio de ejecución de las llamadas MCP.
+4. **📄 Diagnósticos del Sistema: Logs en Tiempo Real (Loki)**:
+   * Visor estructurado de logs locales (`logs/pipeline.log` y `logs/mcp.log`) recolectados mediante Grafana Alloy.
+

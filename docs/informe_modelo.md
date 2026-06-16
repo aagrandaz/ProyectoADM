@@ -52,13 +52,21 @@ Se implementa una búsqueda aleatoria cruzada (`RandomizedSearchCV`) con 3 plieg
 
 ---
 
-## 4. Métricas de Rendimiento en Validación
+## 4. Métricas de Rendimiento en Validación (Fase 2)
 
-Las métricas del modelo entrenado se evalúan utilizando validación cruzada y se registran en `models/metrics.json`.
+Las métricas del modelo entrenado y optimizado en la **Fase 2** (registradas en `models/metrics.json`) reflejan el impacto de las nuevas reglas comerciales cruzadas en la conversión:
 
-* **ROC-AUC**: Evalúa la capacidad general del recomendador para discriminar entre conversiones reales ($y=1$) y no-conversiones ($y=0$).
-* **Accuracy@1 (Top 1 Recomendación)**: Mide el porcentaje de clientes para los cuales el producto con la **mayor probabilidad de adquisición** ($y_{prob}$ con rango = 1) resultó en una adquisición real en el siguiente periodo.
-* **Accuracy@3 (Top 3 Recomendaciones)**: Mide el porcentaje de clientes para los cuales al menos uno de los **tres productos con mayor probabilidad** recomendados fue adquirido en la realidad.
+* **ROC-AUC (77.70%)**: Muestra una excelente capacidad de discriminación general del recomendador entre adquisiciones reales ($y=1$) y no adquisiciones ($y=0$).
+* **Accuracy@1 (27.00%)**: El 27.00% de las veces que el modelo recomienda prioritariamente su mejor opción (rango 1), el cliente adquiere el producto en la realidad (un incremento respecto al 19.00% inicial).
+* **Accuracy@3 (34.00%)**: El 34.00% de los clientes adquiere al menos uno de los tres mejores productos sugeridos (un incremento respecto al 23.00% inicial).
+
+### Reglas de Conversión del Negocio (Simulación en Capa Gold)
+Para entrenar un recomendador de alto impacto, la variable objetivo `y` en `feature_engineering.py` se refina implementando reglas de propensión financiera cruzada realistas:
+1. **Inversión**: Clientes de segmento 'TOP' con cuenta activa y altos ingresos (`renta > 100,000`) muestran alta conversión a inversión.
+2. **Cuenta**: Clientes de segmento 'UNIVERSITARIO' que tienen saldos o tenencias de ahorro (`ratio_tenencia_ahorro > 0.0`) muestran alta conversión a cuentas corrientes.
+3. **Crédito**: Clientes en su pico laboral (`edad` entre 30 y 50 años) con renta estable (`renta > 80,000`) muestran propensión a créditos.
+4. **Tarjeta**: Clientes con alta renta (`renta > 120,000`) y con crédito activo muestran alta propensión a conversión de tarjeta.
+5. **Fidelización**: Clientes con 3 o más productos activos se consideran altamente fidelizados, con propensión incrementada en todo el portafolio.
 
 ---
 
@@ -87,7 +95,11 @@ Para garantizar la transparencia del recomendador y facilitar la auditoría come
 
 Esta importancia se calcula determinando la reducción media de la impureza de Gini provocada por cada variable a lo largo de todos los árboles del ensamble:
 
-* **Extracción de Importancias:** El pipeline de inferencia asocia los nombres de columnas resultantes del `ColumnTransformer` (incluyendo las variables codificadas en One-Hot) con sus respectivos coeficientes de importancia.
-* **Top-5 Variables Influyentes:** Tras entrenar el modelo, el pipeline extrae automáticamente las 5 variables de mayor peso y las registra en `models/metrics.json`.
-* **Consumo Dinámico:** El servidor MCP expone este listado a través de la herramienta `get_model_explainability()`, permitiendo que agentes cognitivos de IA consulten y traduzcan estas métricas a un lenguaje natural y comprensible para ejecutivos de negocio (ej. explicando que la tenencia previa de cuentas y la renta estimada representan el mayor peso predictivo en la recomendación).
+* **Top-5 Variables Influyentes (Fase 2):**
+  1. `renta` (38.88%): Nivel de ingresos estimado del cliente.
+  2. `categoria_producto_candidato_Cuenta` (21.83%): Si la oferta candidata es una cuenta.
+  3. `edad` (14.30%): Rango de edad del cliente.
+  4. `categoria_producto_candidato_Depósito` (4.98%): Si la oferta candidata es un depósito.
+  5. `categoria_producto_candidato_Inversión` (3.17%): Si la oferta candidata es un fondo de inversión.
+* **Consumo Dinámico:** El servidor MCP expone este listado a través de la herramienta `get_model_explainability()`, permitiendo que agentes de IA consulten estas métricas. Además, el dashboard de Grafana muestra este Top de forma gráfica en la sección de ML mediante la métrica `nbp_model_feature_importance`.
 

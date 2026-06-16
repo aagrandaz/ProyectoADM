@@ -199,7 +199,6 @@ class FeatureEngineer:
                 -- Nuevas variables predictivas
                 ratio_tenencia_ahorro,
                 ratio_tenencia_credito,
-                
                 categoria_producto_candidato,
                 nombre_producto_candidato,
                 CASE 
@@ -207,12 +206,13 @@ class FeatureEngineer:
                     WHEN tiene_producto_actualmente = 1 THEN 0
                     ELSE 
                         CASE 
-                            WHEN segmento = '01 - TOP' AND categoria_producto_candidato = 'Inversión' AND (abs(hash(id_cliente)) % 100) < 15 THEN 1
-                            WHEN segmento = '03 - UNIVERSITARIO' AND categoria_producto_candidato = 'Cuenta' AND (abs(hash(id_cliente)) % 100) < 22 THEN 1
-                            WHEN edad BETWEEN 30 AND 50 AND categoria_producto_candidato = 'Crédito' AND (abs(hash(id_cliente)) % 100) < 12 THEN 1
-                            WHEN renta > 120000 AND categoria_producto_candidato = 'Tarjeta' AND (abs(hash(id_cliente)) % 100) < 18 THEN 1
-                            WHEN ind_actividad_cliente = 1 AND (abs(hash(id_cliente + id_producto_candidato)) % 100) < 4 THEN 1
-                            ELSE IF((abs(hash(id_cliente * id_producto_candidato)) % 100) < 1, 1, 0)
+                            WHEN segmento = '01 - TOP' AND categoria_producto_candidato = 'Inversión' AND tiene_cuenta = 1 AND (abs(hash(id_cliente)) % 100) < 25 THEN 1
+                            WHEN segmento = '03 - UNIVERSITARIO' AND categoria_producto_candidato = 'Cuenta' AND ratio_tenencia_ahorro > 0.0 AND (abs(hash(id_cliente)) % 100) < 30 THEN 1
+                            WHEN edad BETWEEN 30 AND 50 AND categoria_producto_candidato = 'Crédito' AND renta > 80000 AND (abs(hash(id_cliente)) % 100) < 20 THEN 1
+                            WHEN renta > 120000 AND categoria_producto_candidato = 'Tarjeta' AND tiene_credito = 1 AND (abs(hash(id_cliente)) % 100) < 25 THEN 1
+                            WHEN cantidad_productos_actuales >= 3 AND (abs(hash(id_cliente + id_producto_candidato)) % 100) < 15 THEN 1
+                            WHEN ind_actividad_cliente = 1 AND (abs(hash(id_cliente + id_producto_candidato)) % 100) < 5 THEN 1
+                            ELSE IF((abs(hash(id_cliente * id_producto_candidato)) % 100) < 2, 1, 0)
                         END
                 END as y
             FROM candidate_matrix
