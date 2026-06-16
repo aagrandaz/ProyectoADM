@@ -1,11 +1,11 @@
 {
     "bronze_rows_processed": 20071,
-    "bronze_execution_time_seconds": 0.1036,
+    "bronze_execution_time_seconds": 0.1208,
     "silver_rows_processed": 2000,
     "silver_execution_time_seconds": 0.1054,
     "gold_train_rows_processed": 14947,
     "gold_test_rows_processed": 16000,
-    "gold_execution_time_seconds": 0.2884,
-    "ml_execution_time_seconds": 8.7131,
+    "gold_execution_time_seconds": 0.2243,
+    "ml_execution_time_seconds": 16.5044,
     "inference_execution_time_seconds": 2.1263
 }

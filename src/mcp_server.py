@@ -93,7 +93,7 @@ def update_metrics_from_files():
             logger.error(f"Error al leer pipeline_metrics.json: {str(e)}")
 
 # Levantar servidor HTTP de Prometheus en hilo secundario (daemon)
-def start_prometheus_server(port=8000):
+def start_prometheus_server(port=8800):
     try:
         start_http_server(port)
         logger.info(f"Servidor de métricas Prometheus levantado exitosamente en el puerto {port}")
