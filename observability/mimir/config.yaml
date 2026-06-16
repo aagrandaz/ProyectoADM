@@ -1,6 +1,7 @@
 # Grafana Mimir: configuración en modo monolítico para desarrollo local
 # En producción usar modo distribuido (microservices) con S3 como backend
 target: all
+multitenancy_enabled: false
 
 # Servidor HTTP
 server:
@@ -18,31 +19,33 @@ compactor:
   data_dir: /data/mimir/compactor
 
 
-ingester:
-  ring:
-    instance_addr: 127.0.0.1
-    kvstore:
-      store: memberlist
-
-distributor:
-  ring:
-    instance_addr: 127.0.0.1
-    kvstore:
-      store: memberlist
-
-memberlist:
-  join_members: []
-
 # Limites de retención: 7 días en local (dev)
 limits:
   compactor_blocks_retention_period: 168h   # 7 days
   max_global_series_per_user: 1000000
 
+ingester:
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+    replication_factor: 1
+
+distributor:
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+
 # Ruler (para alertas basadas en métricas)
 ruler:
   alertmanager_url: http://localhost:9093  # No requerido en local
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
 
-# Common: directorios compartidos para monolítico
+# Common: configuración compartida para monolítico
 common:
   storage:
     backend: filesystem
