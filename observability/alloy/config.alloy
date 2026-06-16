@@ -46,7 +46,7 @@ prometheus.scrape "mcp_server" {
   targets = [
     {"__address__" = "host.docker.internal:8000", "job" = "mcp-server"},
   ]
-  scrape_interval = "5s"
+  scrape_interval = "15s"
   forward_to      = [prometheus.remote_write.mimir.receiver]
 }
 
