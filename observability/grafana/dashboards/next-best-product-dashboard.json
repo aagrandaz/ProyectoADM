@@ -165,7 +165,7 @@
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
-          "expr": "mcp_tool_latency_seconds_sum / mcp_tool_latency_seconds_count",
+          "expr": "mcp_tool_latency_seconds_sum / (mcp_tool_latency_seconds_count > 0) or on(tool_name) mcp_tool_calls_total * 0",
           "legendFormat": "Latencia: {{tool_name}}",
           "refId": "A"
         }
