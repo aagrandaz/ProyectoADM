@@ -17,9 +17,6 @@ blocks_storage:
 compactor:
   data_dir: /data/mimir/compactor
 
-store_gateway:
-  sharding:
-    enabled: false
 
 ingester:
   ring:
