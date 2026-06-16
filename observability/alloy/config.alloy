@@ -1,0 +1,77 @@
+// ============================================================================
+// Grafana Alloy Configuration: Colector unificado de Observabilidad para NBP
+// ============================================================================
+
+// ─── RECEPTOR: OTLP (Trazas y métricas) ──────────────────────────────────────
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    traces  = [otelcol.processor.batch.default.input]
+    metrics = [otelcol.exporter.prometheus.default.input]
+  }
+}
+
+// ─── PROCESADOR: Batch (agrupa spans) ────────────────────────────────────────
+otelcol.processor.batch "default" {
+  send_batch_size     = 1024
+  send_batch_max_size = 2048
+  timeout             = "5s"
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+// ─── EXPORTADOR: Tempo (Trazas) ──────────────────────────────────────────────
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// ─── EXPORTADOR: Prometheus → Mimir ──────────────────────────────────────────
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+// ─── SCRAPING: Prometheus pull de métricas del servidor MCP en el Host ───────
+prometheus.scrape "mcp_server" {
+  targets = [
+    {"__address__" = "host.docker.internal:8000", "job" = "mcp-server"},
+  ]
+  scrape_interval = "5s"
+  forward_to      = [prometheus.remote_write.mimir.receiver]
+}
+
+// ─── REMOTE WRITE: Mimir ─────────────────────────────────────────────────────
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://mimir:9009/api/v1/push"
+  }
+}
+
+// ─── SCRAPING: Logs del proyecto desde archivos locales montados ────────────
+local.file_match "proyecto_logs" {
+  path_targets = [
+    {"__path__" = "/var/log/proyecto/*.log"},
+  ]
+}
+
+loki.source.file "proyecto_logs" {
+  targets    = local.file_match.proyecto_logs.targets
+  forward_to = [loki.write.default.receiver]
+}
+
+// ─── ESCRITURA: Loki (logs) ──────────────────────────────────────────────────
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

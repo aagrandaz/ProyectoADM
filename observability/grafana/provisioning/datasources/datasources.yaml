@@ -1,0 +1,69 @@
+apiVersion: 1
+
+# Datasources aprovisionados automáticamente al iniciar Grafana
+# Conectan con el stack LGTM local (todos en el network Docker)
+datasources:
+
+  # ── Loki: Logs estructurados JSON de las aplicaciones ──────────────────────
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: false
+    jsonData:
+      derivedFields:
+        # Extraer traceId del log JSON para crear link directo a Tempo
+        - matcherRegex: '"traceId":"(\w+)"'
+          name: TraceID
+          url: "$${__value.raw}"
+          datasourceUid: tempo
+    version: 1
+
+  # ── Tempo: Trazas distribuidas (OTel spans) ─────────────────────────────────
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200
+    isDefault: false
+    jsonData:
+      # Habilitar búsqueda de trazas por servicio/operación
+      tracesToLogs:
+        datasourceUid: loki
+        tags: ['service.name', 'container']
+        mappedTags:
+          - { key: 'service.name', value: 'service' }
+        mapTagNamesEnabled: true
+        spanStartTimeShift: '-1m'
+        spanEndTimeShift: '1m'
+        filterByTraceID: true
+        filterBySpanID: false
+      # Métricas derivadas de trazas (RED: Rate/Errors/Duration)
+      tracesToMetrics:
+        datasourceUid: mimir
+        tags:
+          - { key: 'service.name', value: 'service' }
+      serviceMap:
+        datasourceUid: mimir
+      nodeGraph:
+        enabled: true
+      search:
+        hide: false
+    version: 1
+
+  # ── Mimir: Métricas Prometheus long-term ────────────────────────────────────
+  - name: Mimir
+    type: prometheus
+    uid: mimir
+    access: proxy
+    url: http://mimir:9009/prometheus
+    isDefault: true
+    jsonData:
+      timeInterval: "15s"
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: tempo
+    version: 1
+
+

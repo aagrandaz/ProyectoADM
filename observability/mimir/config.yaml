@@ -1,0 +1,53 @@
+# Grafana Mimir: configuración en modo monolítico para desarrollo local
+# En producción usar modo distribuido (microservices) con S3 como backend
+target: all
+
+# Servidor HTTP
+server:
+  http_listen_port: 9009
+  grpc_listen_port: 9095
+
+# Almacenamiento de métricas en disco local (TSDB)
+# En producción: usar backend S3/GCS
+blocks_storage:
+  backend: filesystem
+  filesystem:
+    dir: /data/mimir/blocks
+
+compactor:
+  data_dir: /data/mimir/compactor
+
+store_gateway:
+  sharding:
+    enabled: false
+
+ingester:
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: memberlist
+
+distributor:
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: memberlist
+
+memberlist:
+  join_members: []
+
+# Limites de retención: 7 días en local (dev)
+limits:
+  compactor_blocks_retention_period: 168h   # 7 days
+  max_global_series_per_user: 1000000
+
+# Ruler (para alertas basadas en métricas)
+ruler:
+  alertmanager_url: http://localhost:9093  # No requerido en local
+
+# Common: directorios compartidos para monolítico
+common:
+  storage:
+    backend: filesystem
+    filesystem:
+      dir: /data/mimir/tsdb-sync

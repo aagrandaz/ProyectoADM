@@ -127,3 +127,27 @@ Si prefieres ejecutar los notebooks de forma agnóstica en la nube de Google Col
 1. Sube la carpeta del proyecto a tu Google Drive (por ejemplo, en `Mi unidad/Colab Notebooks/Proyecto`).
 2. Abre cualquier notebook desde Drive haciendo clic derecho -> **Abrir con -> Google Colaboratory**.
 3. La primera celda de código de cada cuaderno detectará automáticamente el entorno de Colab (`IN_COLAB = True`), instalará las librerías necesarias mediante pip y te pedirá permiso para montar Google Drive (`drive.mount('/content/drive')`) para poder acceder de forma transparente a las carpetas `data/` y `models/`.
+
+---
+
+## 6. Paso 5: Levantamiento y Uso de la Observabilidad (Grafana + Loki + Mimir + Tempo)
+
+El proyecto incluye un entorno de observabilidad pre-configurado para monitorear el pipeline y el servidor MCP.
+
+### Iniciar el Stack de Observabilidad (Docker):
+Asegúrate de tener Docker instalado y ejecutándose, luego corre desde la raíz del proyecto:
+```bash
+cd observability
+docker compose up -d
+```
+Esto levantará:
+* **Grafana (Puerto 3000):** Consola de visualización (iniciar sesión con usuario `admin` y contraseña `admin123`).
+* **Loki (Puerto 3100):** Servidor de Logs (configurado para leer automáticamente los archivos en `logs/`).
+* **Mimir (Puerto 9009):** Servidor de Métricas Prometheus.
+* **Alloy (Puerto 12345):** Colector central que raspa logs y métricas locales.
+
+### Visualizar el Dashboard de Grafana:
+1. Abre tu navegador e ingresa a `http://localhost:3000`.
+2. Ve al menú de **Dashboards** y selecciona **"Next Best Product - ML & Ingestion Observability"**.
+3. Verás en tiempo real las métricas de precisión de tu modelo (ROC-AUC, Accuracy), el volumen de filas procesadas por capa, la tasa de uso de herramientas MCP y el visor de logs integrado para `pipeline.log` y `mcp.log`.
+

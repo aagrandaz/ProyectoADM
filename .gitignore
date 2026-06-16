@@ -3,3 +3,5 @@
 __pycache__/
 *.pkl.tmp
 *.pyc
+.agent/
+logs/

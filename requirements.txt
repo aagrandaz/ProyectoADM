@@ -9,3 +9,5 @@ seaborn
 jupyter
 ipykernel
 mcp
+prometheus_client
+

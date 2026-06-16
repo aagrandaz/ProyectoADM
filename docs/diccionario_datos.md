@@ -138,3 +138,18 @@ erDiagram
     TENENCIA_MENSUAL }o--|| PRODUCTOS : "id_producto"
     TENENCIA_MENSUAL ||--o| ALTAS : "id_cliente + fecha_corte + id_producto"
 ```
+
+
+---
+
+## 9. Matriz Analítica Gold (`dataset_next_best_product_gold.parquet`)
+* **Propósito**: Matriz final construida cruzando clientes y productos candidatos (excluyendo tenencias vigentes) utilizada para entrenamiento e inferencia.
+* **Granularidad**: Una fila por cliente, fecha de corte, origen de datos y producto candidato.
+
+### Esquema de Variables Adicionales:
+| Campo | Tipo | Descripción | Uso Recomendado |
+| :--- | :--- | :--- | :--- |
+| `ratio_tenencia_ahorro` | Flotante | Proporción de productos de categoría 'Ahorro' y 'Cuenta' que el cliente posee respecto al total de esas categorías en el catálogo. | Variable numérica explicativa. |
+| `ratio_tenencia_credito` | Flotante | Proporción de productos de categoría 'Crédito' que el cliente posee (activo/inactivo). | Variable numérica explicativa. |
+| `y` | Binario (`INTEGER`) | Target simulado de propensión (1: adquiere producto, 0: no adquiere). | Variable objetivo para el modelo. |
+

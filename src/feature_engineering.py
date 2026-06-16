@@ -4,8 +4,49 @@ Gobernado por la clase FeatureEngineer para la arquitectura Medallón.
 """
 
 import sys
+import json
+import time
+import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import duckdb
+
+def setup_logger(log_path: Path):
+    logger = logging.getLogger("nbp_pipeline")
+    logger.setLevel(logging.INFO)
+    
+    if not logger.handlers:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        
+        # Consola
+        c_handler = logging.StreamHandler(sys.stdout)
+        c_handler.setFormatter(formatter)
+        logger.addHandler(c_handler)
+        
+        # Archivo rotativo
+        f_handler = RotatingFileHandler(log_path, maxBytes=5*1024*1024, backupCount=3, encoding="utf-8")
+        f_handler.setFormatter(formatter)
+        logger.addHandler(f_handler)
+        
+    return logger
+
+def save_pipeline_metric(base_dir: Path, key: str, value):
+    metrics_path = base_dir / "models" / "pipeline_metrics.json"
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    data = {}
+    if metrics_path.exists():
+        try:
+            with open(metrics_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            data = {}
+            
+    data[key] = value
+    
+    with open(metrics_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 class FeatureEngineer:
     """
@@ -21,18 +62,23 @@ class FeatureEngineer:
         
         # Asegurar existencia de directorios
         self.gold_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Configurar logger
+        log_file = self.base_dir / "logs" / "pipeline.log"
+        self.logger = setup_logger(log_file)
 
     def silver_to_gold(self):
         """
         Capa Gold: Genera la matriz analítica de candidatos para entrenamiento y predicción.
         """
-        print("[Gold] Iniciando cruces de Feature Engineering...")
+        start_time = time.time()
+        self.logger.info("[Gold] Iniciando cruces de Feature Engineering...")
         con = duckdb.connect(database=":memory:")
         
         # Registrar tablas de Silver en DuckDB
         parquet_files = list(self.silver_dir.glob("*.parquet"))
         if not parquet_files:
-            print(f"[Gold] ERROR: No hay archivos Parquet en {self.silver_dir} para procesar.")
+            self.logger.error(f"[Gold] No hay archivos Parquet en {self.silver_dir} para procesar.")
             return
             
         for p in parquet_files:
@@ -61,8 +107,18 @@ class FeatureEngineer:
             FROM test_product_tenure
         """)
         
-        # 2. Computar tenencias por categoría y agregaciones
-        con.execute("""
+        # Consultar conteos en catálogo para el cálculo de los ratios
+        total_ahorro_catalog = con.execute("SELECT COUNT(*) FROM silver_productos WHERE categoria_producto IN ('Ahorro', 'Cuenta')").fetchone()[0]
+        total_credito_catalog = con.execute("SELECT COUNT(*) FROM silver_productos WHERE categoria_producto = 'Crédito'").fetchone()[0]
+        
+        # Evitar divisiones por cero
+        total_ahorro_catalog = max(total_ahorro_catalog, 1)
+        total_credito_catalog = max(total_credito_catalog, 1)
+        
+        self.logger.info(f"[Gold] Total catálogo ahorro: {total_ahorro_catalog} | Crédito: {total_credito_catalog}")
+
+        # 2. Computar tenencias por categoría y nuevas variables predictivas (ratios)
+        con.execute(f"""
             CREATE OR REPLACE TABLE combined_client_aggregates AS
             SELECT 
                 cpt.id_cliente,
@@ -72,7 +128,11 @@ class FeatureEngineer:
                 MAX(CASE WHEN p.categoria_producto = 'Cuenta' AND cpt.estado_producto = 1 THEN 1 ELSE 0 END) as tiene_cuenta,
                 MAX(CASE WHEN p.categoria_producto = 'Crédito' AND cpt.estado_producto = 1 THEN 1 ELSE 0 END) as tiene_credito,
                 MAX(CASE WHEN p.categoria_producto = 'Tarjeta' AND cpt.estado_producto = 1 THEN 1 ELSE 0 END) as tiene_tarjeta,
-                MAX(CASE WHEN p.categoria_producto = 'Inversión' AND cpt.estado_producto = 1 THEN 1 ELSE 0 END) as tiene_inversion
+                MAX(CASE WHEN p.categoria_producto = 'Inversión' AND cpt.estado_producto = 1 THEN 1 ELSE 0 END) as tiene_inversion,
+                
+                -- Nuevas variables predictivas (Mejoras)
+                CAST(COUNT(CASE WHEN p.categoria_producto IN ('Ahorro', 'Cuenta') AND cpt.estado_producto = 1 THEN 1 END) AS DOUBLE) / {total_ahorro_catalog} as ratio_tenencia_ahorro,
+                CAST(COUNT(CASE WHEN p.categoria_producto = 'Crédito' AND cpt.estado_producto = 1 THEN 1 END) AS DOUBLE) / {total_credito_catalog} as ratio_tenencia_credito
             FROM combined_product_tenure cpt
             JOIN silver_productos p ON cpt.id_producto = p.id_producto
             GROUP BY 1, 2, 3
@@ -97,6 +157,11 @@ class FeatureEngineer:
                 COALESCE(cca.tiene_credito, 0) as tiene_credito,
                 COALESCE(cca.tiene_tarjeta, 0) as tiene_tarjeta,
                 COALESCE(cca.tiene_inversion, 0) as tiene_inversion,
+                
+                -- Inclusión de nuevas variables
+                COALESCE(cca.ratio_tenencia_ahorro, 0.0) as ratio_tenencia_ahorro,
+                COALESCE(cca.ratio_tenencia_credito, 0.0) as ratio_tenencia_credito,
+                
                 p.categoria_producto as categoria_producto_candidato,
                 p.nombre_producto as nombre_producto_candidato
             FROM silver_cliente_estado_mensual em
@@ -130,6 +195,11 @@ class FeatureEngineer:
                 tiene_credito,
                 tiene_tarjeta,
                 tiene_inversion,
+                
+                -- Nuevas variables predictivas
+                ratio_tenencia_ahorro,
+                ratio_tenencia_credito,
+                
                 categoria_producto_candidato,
                 nombre_producto_candidato,
                 CASE 
@@ -163,7 +233,16 @@ class FeatureEngineer:
             TO '{self.gold_dir / 'dataset_prediccion_nbp.parquet'}' (FORMAT PARQUET)
         """)
         
-        print("[Gold] Matriz analítica de candidatos construida y guardada en la capa Gold exitosamente.")
+        gold_train_rows = con.execute("SELECT COUNT(*) FROM gold_dataset WHERE origen_datos = 'train' AND tiene_producto_actualmente = 0").fetchone()[0]
+        gold_test_rows = con.execute("SELECT COUNT(*) FROM gold_dataset WHERE origen_datos = 'test' AND tiene_producto_actualmente = 0").fetchone()[0]
+        
+        execution_time = time.time() - start_time
+        save_pipeline_metric(self.base_dir, "gold_train_rows_processed", gold_train_rows)
+        save_pipeline_metric(self.base_dir, "gold_test_rows_processed", gold_test_rows)
+        save_pipeline_metric(self.base_dir, "gold_execution_time_seconds", round(execution_time, 4))
+        
+        self.logger.info(f"[Gold] Matriz analítica de candidatos construida y guardada. Train: {gold_train_rows} filas | Test: {gold_test_rows} filas | en {execution_time:.2f}s")
+        con.close()
 
 def main():
     base = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")

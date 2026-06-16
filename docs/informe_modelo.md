@@ -24,8 +24,9 @@ Se seleccionó un ensamble de árboles de decisión **Random Forest** debido a:
 Para prevenir la fuga de información (data leakage) y asegurar la portabilidad, el modelado acopla todas las fases en un único objeto `Pipeline` de Scikit-Learn mediante un **ColumnTransformer**:
 
 ### Variables Cuantitativas (Numéricas)
-* **edad**, **antiguedad**, **renta**, **cantidad_productos_actuales**.
+* **edad**, **antiguedad**, **renta**, **cantidad_productos_actuales**, **ratio_tenencia_ahorro**, **ratio_tenencia_credito**.
 * **Preprocesamiento**: Normalización estándar (`StandardScaler`) centrando la media en 0 y escalando a varianza unitaria.
+
 
 ### Variables Cualitativas (Categóricas)
 * **segmento**, **categoria_producto_candidato**.
@@ -77,3 +78,16 @@ sort_idx = np.lexsort((-y_prob, client_ids))
 4. **Filtrado Top-K y Cálculo**: Aplica una máscara booleana (`rango < k`) para seleccionar los Top-K candidatos de cada cliente. Se identifican las intersecciones con adquisiciones reales ($y=1$) y se calcula la proporción de clientes con conversiones exitosas.
 
 Esta implementación reduce la complejidad temporal de operaciones repetidas a nivel de intérprete, ejecutándose en complejidad $\mathcal{O}(N \log N)$ dominada por la velocidad en C de `np.lexsort`, haciendo el cálculo de Accuracy@K ideal para escalabilidad masiva en producción.
+
+---
+
+## 6. Explicabilidad del Modelo (Feature Importance)
+
+Para garantizar la transparencia del recomendador y facilitar la auditoría comercial en el ámbito financiero, el sistema extrae de forma nativa la **importancia de las variables (feature importances)** desde el clasificador Random Forest.
+
+Esta importancia se calcula determinando la reducción media de la impureza de Gini provocada por cada variable a lo largo de todos los árboles del ensamble:
+
+* **Extracción de Importancias:** El pipeline de inferencia asocia los nombres de columnas resultantes del `ColumnTransformer` (incluyendo las variables codificadas en One-Hot) con sus respectivos coeficientes de importancia.
+* **Top-5 Variables Influyentes:** Tras entrenar el modelo, el pipeline extrae automáticamente las 5 variables de mayor peso y las registra en `models/metrics.json`.
+* **Consumo Dinámico:** El servidor MCP expone este listado a través de la herramienta `get_model_explainability()`, permitiendo que agentes cognitivos de IA consulten y traduzcan estas métricas a un lenguaje natural y comprensible para ejecutivos de negocio (ej. explicando que la tenencia previa de cuentas y la renta estimada representan el mayor peso predictivo en la recomendación).
+

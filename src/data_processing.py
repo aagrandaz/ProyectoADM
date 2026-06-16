@@ -4,9 +4,50 @@ Gobernado por la clase DataProcessor para la arquitectura Medallón.
 """
 
 import sys
+import json
+import time
+import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import pandas as pd
 import duckdb
+
+def setup_logger(log_path: Path):
+    logger = logging.getLogger("nbp_pipeline")
+    logger.setLevel(logging.INFO)
+    
+    if not logger.handlers:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        
+        # Consola
+        c_handler = logging.StreamHandler(sys.stdout)
+        c_handler.setFormatter(formatter)
+        logger.addHandler(c_handler)
+        
+        # Archivo rotativo
+        f_handler = RotatingFileHandler(log_path, maxBytes=5*1024*1024, backupCount=3, encoding="utf-8")
+        f_handler.setFormatter(formatter)
+        logger.addHandler(f_handler)
+        
+    return logger
+
+def save_pipeline_metric(base_dir: Path, key: str, value):
+    metrics_path = base_dir / "models" / "pipeline_metrics.json"
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    data = {}
+    if metrics_path.exists():
+        try:
+            with open(metrics_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            data = {}
+            
+    data[key] = value
+    
+    with open(metrics_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 class DataProcessor:
     """
@@ -23,43 +64,56 @@ class DataProcessor:
         # Asegurar existencia de directorios
         self.bronze_dir.mkdir(parents=True, exist_ok=True)
         self.silver_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Configurar logger
+        log_file = self.base_dir / "logs" / "pipeline.log"
+        self.logger = setup_logger(log_file)
 
     def raw_to_bronze(self):
         """
         Capa Bronze: Convierte archivos CSV a Parquet conservando el esquema original.
         """
-        print("[Bronze] Iniciando conversión 1:1 de CSV a Parquet...")
+        start_time = time.time()
+        self.logger.info("[Bronze] Iniciando conversión 1:1 de CSV a Parquet...")
         csv_files = list(self.raw_dir.glob("*.csv"))
         if not csv_files:
-            print(f"[Bronze] ADVERTENCIA: No se encontraron archivos CSV en {self.raw_dir}")
+            self.logger.warning(f"[Bronze] No se encontraron archivos CSV en {self.raw_dir}")
             return
             
+        total_rows = 0
         for csv_file in csv_files:
             table_name = csv_file.stem
             parquet_path = self.bronze_dir / f"{table_name}.parquet"
             df = pd.read_csv(csv_file)
             df.to_parquet(parquet_path, index=False)
-            print(f"[Bronze] Convertido: {csv_file.name} -> {table_name}.parquet ({df.shape[0]} filas)")
+            total_rows += df.shape[0]
+            self.logger.info(f"[Bronze] Convertido: {csv_file.name} -> {table_name}.parquet ({df.shape[0]} filas)")
+            
+        execution_time = time.time() - start_time
+        save_pipeline_metric(self.base_dir, "bronze_rows_processed", total_rows)
+        save_pipeline_metric(self.base_dir, "bronze_execution_time_seconds", round(execution_time, 4))
+        self.logger.info(f"[Bronze] Conversión finalizada. Total filas: {total_rows} en {execution_time:.2f}s")
 
     def bronze_to_silver(self):
         """
         Capa Silver: Limpieza de cadenas, tipado estricto, imputación estadística
         de valores faltantes mediante la mediana y cálculo MoM de altas de producto.
         """
-        print("[Silver] Iniciando transformaciones de limpieza y tipado...")
+        start_time = time.time()
+        self.logger.info("[Silver] Iniciando transformaciones de limpieza y tipado...")
         con = duckdb.connect(database=":memory:")
         
         # Registrar tablas de Bronze en DuckDB
         parquet_files = list(self.bronze_dir.glob("*.parquet"))
         if not parquet_files:
-            print(f"[Silver] ERROR: No hay archivos Parquet en {self.bronze_dir} para procesar.")
+            self.logger.error(f"[Silver] No hay archivos Parquet en {self.bronze_dir} para procesar.")
             return
             
         for p in parquet_files:
             con.execute(f"CREATE OR REPLACE VIEW bronze_{p.stem} AS SELECT * FROM read_parquet('{p}')")
 
         # 1. Provincias
-        print("[Silver] Procesando provincias...")
+        self.logger.info("[Silver] Procesando provincias...")
         con.execute(f"""
             CREATE OR REPLACE TABLE silver_provincias AS
             SELECT DISTINCT
@@ -71,7 +125,7 @@ class DataProcessor:
         con.execute(f"COPY silver_provincias TO '{self.silver_dir / 'provincias.parquet'}' (FORMAT PARQUET)")
 
         # 2. Segmentos
-        print("[Silver] Procesando segmentos...")
+        self.logger.info("[Silver] Procesando segmentos...")
         con.execute(f"""
             CREATE OR REPLACE TABLE silver_segmentos AS
             SELECT DISTINCT
@@ -83,7 +137,7 @@ class DataProcessor:
         con.execute(f"COPY silver_segmentos TO '{self.silver_dir / 'segmentos.parquet'}' (FORMAT PARQUET)")
 
         # 3. Productos
-        print("[Silver] Procesando productos...")
+        self.logger.info("[Silver] Procesando productos...")
         con.execute(f"""
             CREATE OR REPLACE TABLE silver_productos AS
             SELECT DISTINCT
@@ -97,7 +151,7 @@ class DataProcessor:
         con.execute(f"COPY silver_productos TO '{self.silver_dir / 'productos.parquet'}' (FORMAT PARQUET)")
 
         # 4. Clientes
-        print("[Silver] Procesando clientes...")
+        self.logger.info("[Silver] Procesando clientes...")
         con.execute(f"""
             CREATE OR REPLACE TABLE silver_clientes AS
             SELECT DISTINCT
@@ -121,7 +175,7 @@ class DataProcessor:
         median_renta = con.execute("SELECT MEDIAN(renta) FROM bronze_cliente_estado_mensual").fetchone()[0]
 
         # 5. Cliente Estado Mensual
-        print("[Silver] Procesando cliente_estado_mensual...")
+        self.logger.info("[Silver] Procesando cliente_estado_mensual...")
         con.execute(f"""
             CREATE OR REPLACE TABLE silver_cliente_estado_mensual AS
             SELECT
@@ -147,7 +201,7 @@ class DataProcessor:
         con.execute(f"COPY silver_cliente_estado_mensual TO '{self.silver_dir / 'cliente_estado_mensual.parquet'}' (FORMAT PARQUET)")
 
         # 6. Cliente Producto Mensual (Tenencia de productos)
-        print("[Silver] Procesando cliente_producto_mensual...")
+        self.logger.info("[Silver] Procesando cliente_producto_mensual...")
         con.execute(f"""
             CREATE OR REPLACE TABLE silver_cliente_producto_mensual AS
             SELECT
@@ -163,7 +217,7 @@ class DataProcessor:
         con.execute(f"COPY silver_cliente_producto_mensual TO '{self.silver_dir / 'cliente_producto_mensual.parquet'}' (FORMAT PARQUET)")
 
         # 7. Cliente Producto Alta (Cálculo lógico MoM)
-        print("[Silver] Calculando cliente_producto_alta...")
+        self.logger.info("[Silver] Calculando cliente_producto_alta...")
         con.execute(f"""
             CREATE OR REPLACE TABLE silver_cliente_producto_alta AS
             WITH lag_tenure AS (
@@ -186,7 +240,15 @@ class DataProcessor:
             WHERE prev_estado = 0 AND estado_producto = 1
         """)
         con.execute(f"COPY silver_cliente_producto_alta TO '{self.silver_dir / 'cliente_producto_alta.parquet'}' (FORMAT PARQUET)")
-        print("[Silver] Procesamiento y exportación finalizados con éxito.")
+        
+        # Conteo final de registros en la capa Silver
+        silver_rows = con.execute("SELECT COUNT(*) FROM silver_cliente_estado_mensual").fetchone()[0]
+        execution_time = time.time() - start_time
+        save_pipeline_metric(self.base_dir, "silver_rows_processed", silver_rows)
+        save_pipeline_metric(self.base_dir, "silver_execution_time_seconds", round(execution_time, 4))
+        
+        self.logger.info(f"[Silver] Procesamiento y exportación finalizados con éxito. Filas Silver: {silver_rows} en {execution_time:.2f}s")
+        con.close()
 
 def main():
     base = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")

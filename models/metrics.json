@@ -1,10 +1,17 @@
 {
-    "roc_auc": 0.7992124990673319,
-    "accuracy_at_1": 0.225,
-    "accuracy_at_3": 0.27,
+    "roc_auc": 0.7773740269039254,
+    "accuracy_at_1": 0.19,
+    "accuracy_at_3": 0.23,
     "best_params": {
         "classifier__n_estimators": 100,
         "classifier__min_samples_leaf": 2,
         "classifier__max_depth": 14
+    },
+    "feature_importances": {
+        "renta": 0.44527,
+        "categoria_producto_candidato_Cuenta": 0.19591,
+        "edad": 0.15279,
+        "categoria_producto_candidato_Depósito": 0.03736,
+        "categoria_producto_candidato_Inversión": 0.028
     }
 }
