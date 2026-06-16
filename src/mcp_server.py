@@ -61,6 +61,11 @@ PIPELINE_ROWS = Gauge(
     ['layer']
 )
 
+# Inicializar métricas de herramientas con labels para evitar "No Data" en Grafana
+for tool in ["get_client_profile", "get_client_recommendation", "get_model_performance", "get_model_explainability", "get_product_catalog"]:
+    MCP_TOOL_CALLS.labels(tool_name=tool)
+    MCP_TOOL_LATENCY.labels(tool_name=tool)
+
 def update_metrics_from_files():
     """Lee los archivos de métricas generados por el pipeline y actualiza los Gauges de Prometheus."""
     logger.info("Actualizando Gauges de Prometheus desde métricas en disco...")
