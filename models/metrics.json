@@ -1,17 +1,17 @@
 {
-    "roc_auc": 0.7769674411914105,
+    "roc_auc": 0.7812999249299871,
     "accuracy_at_1": 0.27,
-    "accuracy_at_3": 0.34,
+    "accuracy_at_3": 0.33,
     "best_params": {
-        "classifier__n_estimators": 50,
+        "classifier__n_estimators": 100,
         "classifier__min_samples_leaf": 2,
         "classifier__max_depth": 14
     },
     "feature_importances": {
-        "renta": 0.38883,
-        "categoria_producto_candidato_Cuenta": 0.21833,
-        "edad": 0.14296,
-        "categoria_producto_candidato_Depósito": 0.04982,
-        "categoria_producto_candidato_Inversión": 0.03171
+        "renta": 0.38588,
+        "categoria_producto_candidato_Cuenta": 0.23418,
+        "edad": 0.14271,
+        "categoria_producto_candidato_Depósito": 0.04659,
+        "categoria_producto_candidato_Inversión": 0.03195
     }
 }
